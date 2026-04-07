@@ -1,0 +1,16 @@
+---
+import ExerciseList from "../../components/ExerciseList.svelte";
+
+export const prerender = false;
+
+const { id } = Astro.params;
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Exercises</title>
+  </head>
+  <body>
+    <ExerciseList client:only="svelte" languageId={id} />
+  </body>
+</html>

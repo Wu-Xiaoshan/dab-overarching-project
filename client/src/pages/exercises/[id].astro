@@ -1,0 +1,16 @@
+---
+import ExerciseDetail from "../../components/ExerciseDetail.svelte";
+
+export const prerender = false;
+
+const { id } = Astro.params;
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Exercise</title>
+  </head>
+  <body>
+    <ExerciseDetail client:only="svelte" exerciseId={id} />
+  </body>
+</html>

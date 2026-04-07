@@ -1,0 +1,14 @@
+---
+import LanguageList from "../components/LanguageList.svelte";
+
+export const prerender = false;
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Client</title>
+  </head>
+  <body>
+    <LanguageList client:only="svelte" />
+  </body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "client",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "start": "deno run --allow-net --allow-read --allow-env ./dist/server/entry.mjs"
+  },
+  "dependencies": {
+    "@astrojs/deno": "^5.0.0",
+    "@astrojs/svelte": "^5.4.0",
+    "astro": "^4.16.0",
+    "svelte": "^5.0.0"
+  }
+}

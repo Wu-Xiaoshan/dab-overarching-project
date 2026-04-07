@@ -1,0 +1,101 @@
+services:
+  database:
+    container_name: dab-overarching-project-database-1
+    image: postgres:17.0
+    restart: unless-stopped
+    env_file:
+      - project.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U username -d database"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  flyway:
+    image: flyway/flyway
+    command: -connectRetries=60 -baselineOnMigrate=true migrate
+    volumes:
+      - ./database-migrations:/flyway/sql
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://database:5432/database
+      - FLYWAY_USER=username
+      - FLYWAY_PASSWORD=password
+    depends_on:
+      database:
+        condition: service_healthy
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  traefik:
+    image: traefik:v3.3
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:8000"
+    ports:
+      - "8080:8080"
+      - "8000:8000"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      flyway:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+    env_file:
+      - project.env
+    environment:
+      - POSTGRES_HOST=database
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.server-router.entrypoints=web"
+      - "traefik.http.routers.server-router.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.server-router.service=server-service"
+      - "traefik.http.services.server-service.loadbalancer.server.port=8000"
+
+  grader:
+    build: ./grader
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - project.env
+    environment:
+      - POSTGRES_HOST=database
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grader-api.entrypoints=web"
+      - "traefik.http.routers.grader-api.rule=PathPrefix(`/grader-api`)"
+      - "traefik.http.routers.grader-api.middlewares=grader-api-replacepath"
+      - "traefik.http.middlewares.grader-api-replacepath.replacePathRegex.regex=^/grader-api(.*)"
+      - "traefik.http.middlewares.grader-api-replacepath.replacePathRegex.replacement=/api$1"
+      - "traefik.http.services.grader-api.loadbalancer.server.port=8000"
+
+  client:
+    build: ./client
+    restart: unless-stopped
+    depends_on:
+      - server
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.client-router.entrypoints=web"
+      - "traefik.http.routers.client-router.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.client-router.service=client-service"
+      - "traefik.http.services.client-service.loadbalancer.server.port=4321"
