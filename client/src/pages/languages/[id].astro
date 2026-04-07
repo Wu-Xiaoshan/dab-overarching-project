@@ -1,5 +1,6 @@
 ---
 import ExerciseList from "../../components/ExerciseList.svelte";
+import AuthBar from "../../components/auth/AuthBar.svelte";
 
 export const prerender = false;
 
@@ -11,6 +12,7 @@ const { id } = Astro.params;
     <title>Exercises</title>
   </head>
   <body>
+    <AuthBar client:visible />
     <ExerciseList client:only="svelte" languageId={id} />
   </body>
 </html>

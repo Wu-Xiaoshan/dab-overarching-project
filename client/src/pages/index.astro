@@ -1,6 +1,6 @@
 ---
 import LanguageList from "../components/LanguageList.svelte";
-import UserInfo from "../components/auth/UserInfo.svelte";
+import AuthBar from "../components/auth/AuthBar.svelte";
 
 export const prerender = false;
 ---
@@ -10,11 +10,7 @@ export const prerender = false;
     <title>Client</title>
   </head>
   <body>
-    <UserInfo client:visible />
-    <p>
-      <a href="/auth/register">Register</a> |
-      <a href="/auth/login">Login</a>
-    </p>
+    <AuthBar client:visible />
     <LanguageList client:only="svelte" />
   </body>
 </html>

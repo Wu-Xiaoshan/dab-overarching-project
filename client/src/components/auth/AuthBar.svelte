@@ -5,9 +5,13 @@
 </script>
 
 {#if userState.loading}
-  <p>Loading...</p>
+  <p></p>
 {:else if userState.email}
   <p>{userState.email}</p>
 {:else}
-  <p>No user info</p>
+  <p>
+    <a href="/auth/login">Login</a>
+    |
+    <a href="/auth/register">Register</a>
+  </p>
 {/if}

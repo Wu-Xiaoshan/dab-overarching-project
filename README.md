@@ -51,6 +51,15 @@ Flyway runs migrations on startup. Default credentials and auth secrets live in 
 
 Environment variables for auth (see `project.env`): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, plus `PGHOST` / `PGUSER` / `PGPASSWORD` / `PGDATABASE` / `PGPORT` for Postgres (used by Better Auth’s dialect and the app).
 
+### Client auth (UI)
+
+- **`client/src/utils/auth.js`** — `createAuthClient()` from Better Auth (Svelte integration).
+- **`client/src/states/userState.svelte.js`** — shared session state via `useUserState()` (loads once per page load).
+- **`client/src/components/auth/RegistrationAndLoginForm.svelte`** — register / login form; **`client/src/components/auth/AuthBar.svelte`** — top-of-page auth strip.
+- **`client/src/pages/auth/register.astro`** and **`login.astro`** — auth pages.
+
+Every Astro page includes **`AuthBar`** (`client:visible`): authenticated users see their **email** in a paragraph; guests see **Login** and **Register** links. On **`/exercises/:id`**, the exercise title and description still load for everyone; the **editor, submit, and grading UI** appear only when logged in. Otherwise the page shows: **`Login or register to complete exercises.`**
+
 ### Enable grading
 
 The grader does not process the queue until consumption is enabled:
@@ -62,7 +71,10 @@ curl -X POST http://localhost:8000/grader-api/consume/enable
 ## Layout
 
 ```
-client/                 # Astro + Svelte frontend
+client/src/utils/auth.js          # Better Auth client (createAuthClient)
+client/src/states/userState.svelte.js
+client/src/pages/auth/            # login.astro, register.astro
+client/                 # Astro + Svelte frontend (remainder)
 server/                 # Main API + auth.js (Better Auth)
 grader/                 # Grading worker
 database-migrations/    # Flyway SQL (includes V3 Better Auth schema)

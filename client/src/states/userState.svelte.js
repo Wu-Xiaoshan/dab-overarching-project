@@ -1,4 +1,4 @@
-import { authClient } from "../utils/auth/auth.js";
+import { authClient } from "../utils/auth.js";
 
 let userState = $state({ loading: true });
 let userStatePromise = null;

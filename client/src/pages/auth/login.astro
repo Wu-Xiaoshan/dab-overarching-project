@@ -1,5 +1,6 @@
 ---
 import RegistrationAndLoginForm from "../../components/auth/RegistrationAndLoginForm.svelte";
+import AuthBar from "../../components/auth/AuthBar.svelte";
 ---
 
 <html lang="en">
@@ -8,6 +9,7 @@ import RegistrationAndLoginForm from "../../components/auth/RegistrationAndLogin
     <title>Login</title>
   </head>
   <body>
+    <AuthBar client:visible />
     <RegistrationAndLoginForm isLoginForm client:visible />
   </body>
 </html>
