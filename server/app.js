@@ -1,15 +1,18 @@
 import { Hono } from "@hono/hono";
 import postgres from "postgres";
 import Redis from "ioredis";
+import { auth } from "./auth.js";
 
 const app = new Hono();
 
 const sql = postgres({
-  host: Deno.env.get("POSTGRES_HOST") || "database",
-  user: Deno.env.get("POSTGRES_USER") || "username",
-  pass: Deno.env.get("POSTGRES_PASSWORD") || "password",
-  database: Deno.env.get("POSTGRES_DB") || "database",
-  port: 5432,
+  host: Deno.env.get("PGHOST") ?? Deno.env.get("POSTGRES_HOST") ?? "database",
+  user: Deno.env.get("PGUSER") ?? Deno.env.get("POSTGRES_USER") ?? "username",
+  password: Deno.env.get("PGPASSWORD") ?? Deno.env.get("POSTGRES_PASSWORD") ??
+    "password",
+  database: Deno.env.get("PGDATABASE") ?? Deno.env.get("POSTGRES_DB") ??
+    "database",
+  port: Number(Deno.env.get("PGPORT") ?? "5432"),
 });
 
 let redis;
@@ -23,6 +26,18 @@ if (Deno.env.get("REDIS_HOST")) {
 }
 
 const cache = new Map();
+
+const requireSession = async (c, next) => {
+  const session = await auth.api.getSession({
+    headers: c.req.raw.headers,
+  });
+  if (!session?.user) {
+    return new Response(null, { status: 401 });
+  }
+  await next();
+};
+
+app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
 
 app.get("/api/languages", async (c) => {
   if (cache.has("languages")) {
@@ -72,7 +87,7 @@ app.get("/api/exercises/:id", async (c) => {
   });
 });
 
-app.get("/api/submissions/:id/status", async (c) => {
+app.get("/api/submissions/:id/status", requireSession, async (c) => {
   const id = c.req.param("id");
   const result = await sql`
     SELECT grading_status, grade
@@ -94,7 +109,7 @@ app.get("/api/submissions/:id/status", async (c) => {
   });
 });
 
-app.post("/api/exercises/:id/submissions", async (c) => {
+app.post("/api/exercises/:id/submissions", requireSession, async (c) => {
   const exerciseId = c.req.param("id");
   const body = await c.req.json();
   const sourceCode = body.source_code;

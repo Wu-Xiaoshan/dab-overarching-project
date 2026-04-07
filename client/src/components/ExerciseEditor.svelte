@@ -25,7 +25,9 @@
   };
 
   const pollOnce = async (submissionId) => {
-    const r = await fetch(`/api/submissions/${submissionId}/status`);
+    const r = await fetch(`/api/submissions/${submissionId}/status`, {
+      credentials: "include",
+    });
     if (!r.ok) {
       return;
     }
@@ -50,6 +52,7 @@
     const r = await fetch(`/api/exercises/${exerciseId}/submissions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ source_code: text }),
     });
 

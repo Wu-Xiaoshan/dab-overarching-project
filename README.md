@@ -8,6 +8,7 @@ Course full-stack project: programming exercises, submissions, and asynchronous 
 |--------|------------|
 | Client | [Astro](https://astro.build/) + [Svelte 5](https://svelte.dev/) |
 | API | [Deno](https://deno.com/) + [Hono](https://hono.dev/) |
+| Auth | [Better Auth](https://www.better-auth.com/) (email + password, session cookie) |
 | Database | PostgreSQL 17, migrations via [Flyway](https://flywaydb.org/) |
 | Queue / cache | Redis |
 | Grader | Deno + Hono (consumes the `submissions` queue) |
@@ -25,7 +26,7 @@ From the repository root:
 docker compose up --build
 ```
 
-Flyway runs migrations on startup. Default credentials live in `project.env` (for local learning only; do not expose on the public internet).
+Flyway runs migrations on startup. Default credentials and auth secrets live in `project.env` (for local learning only; do not expose on the public internet).
 
 ### Useful URLs
 
@@ -33,10 +34,22 @@ Flyway runs migrations on startup. Default credentials live in `project.env` (fo
 |---------|-----|
 | App (via load balancer) | http://localhost:8000 |
 | Traefik dashboard | http://localhost:8080 |
+| Register | http://localhost:8000/auth/register |
+| Login | http://localhost:8000/auth/login |
 
 - `/` → **client**  
-- `/api/*` → **server**  
+- `/api/*` → **server** (including `/api/auth/*` for Better Auth)  
 - `/grader-api/*` → **grader** (path rewritten to `/api/*`)
+
+### Authentication
+
+- Better Auth is mounted at **`/api/auth/**`** (same pattern as the course materials).
+- Database tables are defined in **`database-migrations/V3__better_auth_schema.sql`** (core Better Auth schema with `app_user` as the user model).
+- **`POST /api/exercises/:id/submissions`** and **`GET /api/submissions/:id/status`** require a **valid session** (session cookie). Unauthenticated requests get **401** with an empty body.
+- Public JSON endpoints such as **`/api/languages`**, **`/api/languages/:id/exercises`**, and **`/api/exercises/:id`** stay available without login.
+- After registering or signing in, the browser stores the Better Auth session cookie; the exercise editor sends **`credentials: "include"`** on submit and status polling so the cookie is attached.
+
+Environment variables for auth (see `project.env`): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, plus `PGHOST` / `PGUSER` / `PGPASSWORD` / `PGDATABASE` / `PGPORT` for Postgres (used by Better Auth’s dialect and the app).
 
 ### Enable grading
 
@@ -50,12 +63,12 @@ curl -X POST http://localhost:8000/grader-api/consume/enable
 
 ```
 client/                 # Astro + Svelte frontend
-server/                 # Main API (languages, exercises, submissions, status)
+server/                 # Main API + auth.js (Better Auth)
 grader/                 # Grading worker
-database-migrations/    # Flyway SQL
+database-migrations/    # Flyway SQL (includes V3 Better Auth schema)
 redis/                  # Redis configuration
 compose.yaml            # Services and Traefik labels
-project.env             # DB and related env vars
+project.env             # DB, PG*, and Better Auth env vars
 pack-submission.ps1     # Optional Windows helper to zip for coursework (see below)
 ```
 

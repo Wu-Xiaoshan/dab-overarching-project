@@ -9,7 +9,7 @@ if (Test-Path $nm) {
   Remove-Item -Recurse -Force $nm
 }
 
-$out = Join-Path $root "dab-overarching-project-step7.zip"
+$out = Join-Path $root "dab-overarching-project-step8.zip"
 if (Test-Path $out) {
   Remove-Item -Force $out
 }
