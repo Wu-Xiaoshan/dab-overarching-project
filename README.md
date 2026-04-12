@@ -153,9 +153,10 @@ curl -s -X POST http://localhost:8000/inference-api/predict \
 Zip **only** **`app.py`**, **`requirements.txt`**, and **`Dockerfile`** (flat root, no `inference-api/` folder, no model files):
 
 ```powershell
-Push-Location inference-api
-Compress-Archive -Path app.py, requirements.txt, Dockerfile -DestinationPath ..\dab-step13-inference-api.zip -Force
-Pop-Location
+Set-Location inference-api
+Compress-Archive -LiteralPath app.py, requirements.txt, Dockerfile `
+  -DestinationPath ..\dab-step13-inference-api.zip -Force
+Set-Location ..
 ```
 
 ### Enable grading
