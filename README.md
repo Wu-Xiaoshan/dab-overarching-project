@@ -71,6 +71,26 @@ Compress-Archive -Path * -DestinationPath ..\dab-step11-server.zip -Force
 Pop-Location
 ```
 
+### Exercises, solutions, and grading (step 12)
+
+- **`V5__exercise_solutions.sql`** adds non-null **`solution_code`** on **`exercises`** (existing rows backfilled with `''` first).
+- **`V6__sql_exercises.sql`** inserts the **SQL** language and three sample SQL exercises with reference solutions.
+- **`grader/grader-utils.js`** exports **`levenshteinDistance(a, b)`** (classic edit distance).
+- **`grader/app.js`** keeps the same queue loop: set **`processing`** → sleep **1–3 s** (random) → load **`source_code`** and **`solution_code`** via join →  
+  **`grade = ceil(100 * (1 - distance / max(len(submission), len(solution))))`** (if both lengths are 0, grade **100**) → set **`graded`** with that grade → next job or **250 ms** wait when the queue is empty.
+
+The public API still returns only **`id`**, **`title`**, and **`description`** for exercises (not **`solution_code`**).
+
+#### Step 12 assignment zip (grader folder only)
+
+Hand-in zip of **only** the contents of **`grader/`**, with **`app.js` at the archive root**:
+
+```powershell
+Push-Location grader
+Compress-Archive -Path * -DestinationPath ..\dab-step12-grader.zip -Force
+Pop-Location
+```
+
 ### Client auth (UI)
 
 - **`client/src/utils/auth.js`** — `createAuthClient()` from Better Auth (Svelte integration).
@@ -119,7 +139,7 @@ client/src/pages/auth/            # login.astro, register.astro
 client/                 # Astro + Svelte frontend (remainder)
 server/                 # Main API + auth.js (Better Auth)
 grader/                 # Grading worker
-database-migrations/    # Flyway SQL (V3 Better Auth, V4 user_id on submissions)
+database-migrations/    # Flyway (V3 auth, V4 user_id, V5 solution_code, V6 SQL exercises)
 redis/                  # Redis configuration
 compose.yaml            # Services, Traefik, LGTM, bind mounts
 project.env             # DB, PG*, Better Auth, OpenTelemetry (Deno)

@@ -1,6 +1,7 @@
 import { Hono } from "@hono/hono";
 import postgres from "postgres";
 import Redis from "ioredis";
+import { levenshteinDistance } from "./grader-utils.js";
 
 const app = new Hono();
 
@@ -27,6 +28,15 @@ let is_consuming = false;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const computeGradeFromLevenshtein = (submission, solution) => {
+  const dist = levenshteinDistance(submission, solution);
+  const maxLen = Math.max(submission.length, solution.length);
+  if (maxLen === 0) {
+    return 100;
+  }
+  return Math.ceil(100 * (1 - dist / maxLen));
+};
+
 const processQueue = async () => {
   if (is_consuming) return;
   is_consuming = true;
@@ -43,10 +53,20 @@ const processQueue = async () => {
         WHERE id = ${submissionId}
       `;
 
-      const delay = Math.floor(Math.random() * 2000) + 1000;
+      const delay = Math.floor(Math.random() * 2001) + 1000;
       await sleep(delay);
 
-      const grade = Math.floor(Math.random() * 101);
+      const rows = await sql`
+        SELECT es.source_code, e.solution_code
+        FROM exercise_submissions es
+        JOIN exercises e ON e.id = es.exercise_id
+        WHERE es.id = ${submissionId}
+      `;
+
+      const submission = rows[0]?.source_code ?? "";
+      const solution = rows[0]?.solution_code ?? "";
+      const grade = computeGradeFromLevenshtein(submission, solution);
+
       await sql`
         UPDATE exercise_submissions
         SET grading_status = 'graded', grade = ${grade}
