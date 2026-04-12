@@ -1,6 +1,6 @@
 # DAB Overarching Project
 
-Course full-stack project: programming exercises, submissions, and asynchronous grading. The **Traefik** load balancer is the single entry point; the **server** exposes the REST API; the **grader** pulls jobs from a Redis queue and updates PostgreSQL.
+Course full-stack project: programming exercises, submissions, and asynchronous grading. The **Traefik** load balancer is the single entry point; the **server** exposes the REST API; the **grader** scores submissions; an optional **inference-api** (FastAPI + scikit-learn) exposes ML **train** / **predict** routes under **`/inference-api`**.
 
 ## Stack
 
@@ -12,6 +12,7 @@ Course full-stack project: programming exercises, submissions, and asynchronous 
 | Database | PostgreSQL 17, migrations via [Flyway](https://flywaydb.org/) |
 | Queue / cache | Redis |
 | Grader | Deno + Hono (consumes the `submissions` queue) |
+| Inference API | Python 3.12, [FastAPI](https://fastapi.tiangolo.com/), [scikit-learn](https://scikit-learn.org/) |
 | Edge routing | [Traefik](https://traefik.io/) v3.3 |
 | Local observability | [Grafana OTEL LGTM](https://grafana.com/docs/opentelemetry/docker-lgtm/) (`grafana/otel-lgtm`) |
 
@@ -42,7 +43,8 @@ Flyway runs migrations on startup. Default credentials and auth secrets live in 
 
 - `/` → **client**  
 - `/api/*` → **server** (including `/api/auth/*` for Better Auth)  
-- `/grader-api/*` → **grader** (path rewritten to `/api/*`)
+- `/grader-api/*` → **grader** (path rewritten to `/api/*`)  
+- `/inference-api/*` → **inference-api** (prefix stripped to `/predict` and `/train` inside the container)
 
 ### Authentication
 
@@ -122,6 +124,40 @@ Some course hand-ins ask for a zip that contains **only** `compose.yaml` and `pr
 Compress-Archive -Path compose.yaml, project.env -DestinationPath dab-step10-compose-env.zip -Force
 ```
 
+### Inference API (step 13)
+
+Python service in **`inference-api/`** (FastAPI app instance is named **`server`**, run with **`uvicorn app:server`** so it is **`app.server`** in Uvicorn terms).
+
+| Method | Path (via Traefik) | Body | Response |
+|--------|---------------------|------|----------|
+| POST | `/inference-api/predict` | `{ "exercise": number, "code": "string" }` | `{ "prediction": number }` |
+| POST | `/inference-api/train` | `[{ "exercise": number, "code": "string" }, ...]` | `{ "status": "Model trained successfully" }` |
+
+Training fits a **`RandomForestRegressor`** on features **`[exercise, len(code)]`** with a deterministic synthetic target derived from each sample (course-style demo). The model is written to **`/tmp/ml_model`** inside the container (not part of the hand-in zip).
+
+Traefik uses **`PathPrefix(/inference-api)`** with **`replacePathRegex`** so upstream paths are **`/predict`** and **`/train`**. Router **priority 100** (vs **50** for `/api` and `/grader-api`, **1** for the client catch-all `/`) avoids the Astro client stealing these URLs.
+
+Example:
+
+```bash
+curl -s -X POST http://localhost:8000/inference-api/train \
+  -H "Content-Type: application/json" \
+  -d '[{"exercise":1,"code":"SELECT 1"},{"exercise":2,"code":"SELECT 2"}]'
+curl -s -X POST http://localhost:8000/inference-api/predict \
+  -H "Content-Type: application/json" \
+  -d '{"exercise":1,"code":"SELECT 1"}'
+```
+
+#### Step 13 assignment zip (inference-api only)
+
+Zip **only** **`app.py`**, **`requirements.txt`**, and **`Dockerfile`** (flat root, no `inference-api/` folder, no model files):
+
+```powershell
+Push-Location inference-api
+Compress-Archive -Path app.py, requirements.txt, Dockerfile -DestinationPath ..\dab-step13-inference-api.zip -Force
+Pop-Location
+```
+
 ### Enable grading
 
 The grader does not process the queue until consumption is enabled:
@@ -139,6 +175,7 @@ client/src/pages/auth/            # login.astro, register.astro
 client/                 # Astro + Svelte frontend (remainder)
 server/                 # Main API + auth.js (Better Auth)
 grader/                 # Grading worker
+inference-api/          # FastAPI ML train/predict (Python)
 database-migrations/    # Flyway (V3 auth, V4 user_id, V5 solution_code, V6 SQL exercises)
 redis/                  # Redis configuration
 compose.yaml            # Services, Traefik, LGTM, bind mounts

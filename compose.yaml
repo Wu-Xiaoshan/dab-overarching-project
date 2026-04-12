@@ -80,6 +80,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.server-router.entrypoints=web"
       - "traefik.http.routers.server-router.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.server-router.priority=50"
       - "traefik.http.routers.server-router.service=server-service"
       - "traefik.http.services.server-service.loadbalancer.server.port=8000"
 
@@ -101,10 +102,25 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.grader-api.entrypoints=web"
       - "traefik.http.routers.grader-api.rule=PathPrefix(`/grader-api`)"
+      - "traefik.http.routers.grader-api.priority=50"
       - "traefik.http.routers.grader-api.middlewares=grader-api-replacepath"
       - "traefik.http.middlewares.grader-api-replacepath.replacePathRegex.regex=^/grader-api(.*)"
       - "traefik.http.middlewares.grader-api-replacepath.replacePathRegex.replacement=/api$1"
       - "traefik.http.services.grader-api.loadbalancer.server.port=8000"
+
+  inference-api:
+    build: ./inference-api
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.inference-api.entrypoints=web"
+      - "traefik.http.routers.inference-api.rule=PathPrefix(`/inference-api`)"
+      - "traefik.http.routers.inference-api.priority=100"
+      - "traefik.http.routers.inference-api.middlewares=inference-api-stripprefix"
+      - "traefik.http.routers.inference-api.service=inference-api-svc"
+      - "traefik.http.middlewares.inference-api-stripprefix.replacePathRegex.regex=^/inference-api(.*)"
+      - "traefik.http.middlewares.inference-api-stripprefix.replacePathRegex.replacement=$1"
+      - "traefik.http.services.inference-api-svc.loadbalancer.server.port=8000"
 
   client:
     build: ./client
@@ -115,5 +131,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.client-router.entrypoints=web"
       - "traefik.http.routers.client-router.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.client-router.priority=1"
       - "traefik.http.routers.client-router.service=client-service"
       - "traefik.http.services.client-service.loadbalancer.server.port=4321"
