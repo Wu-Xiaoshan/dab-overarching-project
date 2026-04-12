@@ -102,6 +102,12 @@ Pop-Location
 
 Every Astro page includes **`AuthBar`** (`client:visible`): authenticated users see their **email** in a paragraph; guests see **Login** and **Register** links. On **`/exercises/:id`**, the exercise title and description still load for everyone; the **editor, submit, and grading UI** appear only when logged in. Otherwise the page shows: **`Login or register to complete exercises.`**
 
+### Live correctness estimate (step 14)
+
+On the exercise editor (**`ExerciseEditor.svelte`**), each **`textarea`** input resets a **500 ms** debounce timer. The timer runs **only after the user types** (no request before the first `input` event). When the user **stops typing for more than 500 ms**, the client **`POST`**s to **`/inference-api/predict`** with `{ "exercise": <id>, "code": <textarea text> }`. A successful response updates a paragraph:
+
+**`Correctness estimate: <n>%`** where **`<n>`** is **`Math.round(prediction)`** on the numeric **`prediction`** field. Train a model first (e.g. **`POST /inference-api/train`**) or predictions may return **503** and the UI will not update the estimate.
+
 ### Observability (LGTM) and bind mounts
 
 - **`lgtm`** service: `grafana/otel-lgtm:0.8.6`, ports **3000** (Grafana) and **4318** (OTLP HTTP). Data is persisted with a **bind mount** `./lgtm-data:/data` (see [docker-otel-lgtm: persist data](https://github.com/grafana/docker-otel-lgtm#persist-data-across-container-instantiation)).
@@ -191,7 +197,7 @@ pack-submission.ps1     # Optional Windows helper to zip for coursework (see bel
 Optional **PowerShell** helper for packaging coursework submissions:
 
 - Removes `client/node_modules` if present
-- Builds a zip whose **root** contains `compose.yaml`, `project.env`, and the `client`, `database-migrations`, `grader`, `redis`, and `server` folders (no extra parent directory)
+- Builds a zip whose **root** contains `compose.yaml`, `project.env`, and the `client`, `database-migrations`, `grader`, `inference-api`, `redis`, and `server` folders (no extra parent directory; `inference-api` keeps `docker compose` consistent with `compose.yaml`)
 - Verifies `server/app.js` exists at the archive root to avoid “module not found” on the autograder
 
 You do **not** need this script to run the stack; it is only convenient when the course asks for a zip upload.

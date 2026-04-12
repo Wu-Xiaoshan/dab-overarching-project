@@ -9,7 +9,7 @@ if (Test-Path $nm) {
   Remove-Item -Recurse -Force $nm
 }
 
-$out = Join-Path $root "dab-overarching-project-step13.zip"
+$out = Join-Path $root "dab-overarching-project-step14.zip"
 if (Test-Path $out) {
   Remove-Item -Force $out
 }
@@ -20,6 +20,7 @@ $items = @(
   (Join-Path $root "client"),
   (Join-Path $root "database-migrations"),
   (Join-Path $root "grader"),
+  (Join-Path $root "inference-api"),
   (Join-Path $root "redis"),
   (Join-Path $root "server")
 )
