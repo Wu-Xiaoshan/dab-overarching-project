@@ -34,6 +34,7 @@ const requireSession = async (c, next) => {
   if (!session?.user) {
     return new Response(null, { status: 401 });
   }
+  c.set("userId", session.user.id);
   await next();
 };
 
@@ -94,10 +95,11 @@ app.get("/api/exercises/:id", async (c) => {
 
 app.get("/api/submissions/:id/status", requireSession, async (c) => {
   const id = c.req.param("id");
+  const userId = c.get("userId");
   const result = await sql`
     SELECT grading_status, grade
     FROM exercise_submissions
-    WHERE id = ${id}
+    WHERE id = ${id} AND user_id = ${userId}
   `;
 
   if (result.length === 0) {
@@ -116,12 +118,13 @@ app.get("/api/submissions/:id/status", requireSession, async (c) => {
 
 app.post("/api/exercises/:id/submissions", requireSession, async (c) => {
   const exerciseId = c.req.param("id");
+  const userId = c.get("userId");
   const body = await c.req.json();
   const sourceCode = body.source_code;
 
   const result = await sql`
-    INSERT INTO exercise_submissions (exercise_id, source_code)
-    VALUES (${exerciseId}, ${sourceCode})
+    INSERT INTO exercise_submissions (exercise_id, source_code, user_id)
+    VALUES (${exerciseId}, ${sourceCode}, ${userId})
     RETURNING id
   `;
 

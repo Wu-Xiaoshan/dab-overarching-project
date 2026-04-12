@@ -54,6 +54,23 @@ Flyway runs migrations on startup. Default credentials and auth secrets live in 
 
 Environment variables for auth (see `project.env`): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, plus `PGHOST` / `PGUSER` / `PGPASSWORD` / `PGDATABASE` / `PGPORT` for Postgres (used by Better Auth’s dialect and the app).
 
+### Submissions and user ownership (step 11)
+
+- Migration **`database-migrations/V4__user_exercise_submissions.sql`** clears existing rows in **`exercise_submissions`** (so a **`NOT NULL`** `user_id` can be added), then runs:
+  `ALTER TABLE exercise_submissions ADD COLUMN user_id VARCHAR(255) NOT NULL REFERENCES app_user(id);`
+- **`POST /api/exercises/:id/submissions`** stores the **current session user’s id** in `user_id` (`requireSession` sets `userId` from Better Auth’s `session.user.id`).
+- **`GET /api/submissions/:id/status`**: still **401** without a session; with a session, returns **404** if the submission is missing or **`user_id` does not match** the logged-in user; otherwise returns status JSON as before.
+
+#### Step 11 assignment zip (server folder only)
+
+Some hand-ins want a zip of **only** the contents of **`server/`**, with **`app.js` at the root** of the archive (no `server/` prefix). From the repo root:
+
+```powershell
+Push-Location server
+Compress-Archive -Path * -DestinationPath ..\dab-step11-server.zip -Force
+Pop-Location
+```
+
 ### Client auth (UI)
 
 - **`client/src/utils/auth.js`** — `createAuthClient()` from Better Auth (Svelte integration).
@@ -102,7 +119,7 @@ client/src/pages/auth/            # login.astro, register.astro
 client/                 # Astro + Svelte frontend (remainder)
 server/                 # Main API + auth.js (Better Auth)
 grader/                 # Grading worker
-database-migrations/    # Flyway SQL (includes V3 Better Auth schema)
+database-migrations/    # Flyway SQL (V3 Better Auth, V4 user_id on submissions)
 redis/                  # Redis configuration
 compose.yaml            # Services, Traefik, LGTM, bind mounts
 project.env             # DB, PG*, Better Auth, OpenTelemetry (Deno)
