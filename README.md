@@ -44,7 +44,7 @@ Flyway runs migrations on startup. Default credentials and auth secrets live in 
 - `/` → **client**  
 - `/api/*` → **server** (including `/api/auth/*` for Better Auth)  
 - `/grader-api/*` → **grader** (path rewritten to `/api/*`)  
-- `/inference-api/*` → **inference-api** (prefix stripped to `/predict` and `/train` inside the container)
+- `/inference-api/*` → **inference-api** (FastAPI routes are **`/inference-api/predict`** and **`/inference-api/train`**; Traefik forwards the path unchanged)
 
 ### Authentication
 
@@ -135,7 +135,7 @@ Python service in **`inference-api/`** (FastAPI app instance is named **`server`
 
 Training fits a **`RandomForestRegressor`** on features **`[exercise, len(code)]`** with a deterministic synthetic target derived from each sample (course-style demo). The model is written to **`/tmp/ml_model`** inside the container (not part of the hand-in zip).
 
-Traefik uses **`PathPrefix(/inference-api)`** with **`replacePathRegex`** so upstream paths are **`/predict`** and **`/train`**. Router **priority 100** (vs **50** for `/api` and `/grader-api`, **1** for the client catch-all `/`) avoids the Astro client stealing these URLs.
+Traefik uses **`PathPrefix(/inference-api)`** without path rewriting so the app can expose the same **`/inference-api/...`** paths when the grader hits the container directly or via port 8000. Router **priority 100** (vs **50** for `/api` and `/grader-api`, **1** for the client catch-all `/`) avoids the Astro client stealing these URLs.
 
 Example:
 
