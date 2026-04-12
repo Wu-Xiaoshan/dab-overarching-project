@@ -13,6 +13,7 @@ Course full-stack project: programming exercises, submissions, and asynchronous 
 | Queue / cache | Redis |
 | Grader | Deno + Hono (consumes the `submissions` queue) |
 | Edge routing | [Traefik](https://traefik.io/) v3.3 |
+| Local observability | [Grafana OTEL LGTM](https://grafana.com/docs/opentelemetry/docker-lgtm/) (`grafana/otel-lgtm`) |
 
 ## Prerequisites
 
@@ -34,6 +35,8 @@ Flyway runs migrations on startup. Default credentials and auth secrets live in 
 |---------|-----|
 | App (via load balancer) | http://localhost:8000 |
 | Traefik dashboard | http://localhost:8080 |
+| Grafana (LGTM) | http://localhost:3000 (default login `admin` / `admin`) |
+| OpenTelemetry HTTP collector | `http://lgtm:4318` (from other containers) |
 | Register | http://localhost:8000/auth/register |
 | Login | http://localhost:8000/auth/login |
 
@@ -60,6 +63,28 @@ Environment variables for auth (see `project.env`): `BETTER_AUTH_SECRET`, `BETTE
 
 Every Astro page includes **`AuthBar`** (`client:visible`): authenticated users see their **email** in a paragraph; guests see **Login** and **Register** links. On **`/exercises/:id`**, the exercise title and description still load for everyone; the **editor, submit, and grading UI** appear only when logged in. Otherwise the page shows: **`Login or register to complete exercises.`**
 
+### Observability (LGTM) and bind mounts
+
+- **`lgtm`** service: `grafana/otel-lgtm:0.8.6`, ports **3000** (Grafana) and **4318** (OTLP HTTP). Data is persisted with a **bind mount** `./lgtm-data:/data` (see [docker-otel-lgtm: persist data](https://github.com/grafana/docker-otel-lgtm#persist-data-across-container-instantiation)).
+- **`database`**: PostgreSQL data is persisted with **`./postgres-data:/var/lib/postgresql/data`**. **Redis** stays ephemeral (no data volume), as in the course materials.
+- **`project.env`** includes Deno OpenTelemetry settings used by the **server** image:
+  - `OTEL_DENO=true`
+  - `OTEL_EXPORTER_OTLP_ENDPOINT=http://lgtm:4318`
+  - `OTEL_SERVICE_NAME=deno_server`
+- **Server Dockerfile** uses **Deno 2.2.3**, `DENO_FUTURE=1 deno install`, and runs with **`--unstable-otel`** so traces/logs export to the collector.
+- **Traefik** sends OTLP metrics to LGTM: `--metrics.otlp=true` and `--metrics.otlp.http.endpoint=http://lgtm:4318/v1/metrics` (metrics appear in Grafana with a `traefik_` prefix).
+- Smoke-test endpoint: **`GET /api/lgtm-test`** → logs `Hello log collection :)` and returns `{"message":"Hello, world!"}`. After `docker compose up`, call e.g. `curl http://localhost:8000/api/lgtm-test` a few times, then in Grafana → **Explore** → **Logs** / **Metrics** filter by service **`deno_server`** or HTTP-related metrics.
+
+Host directories **`postgres-data/`** and **`lgtm-data/`** are listed in **`.gitignore`** (local data only).
+
+#### Step 10 assignment zip (compose + env only)
+
+Some course hand-ins ask for a zip that contains **only** `compose.yaml` and `project.env` at the **root** of the archive (no folders). From the project root:
+
+```powershell
+Compress-Archive -Path compose.yaml, project.env -DestinationPath dab-step10-compose-env.zip -Force
+```
+
 ### Enable grading
 
 The grader does not process the queue until consumption is enabled:
@@ -79,8 +104,10 @@ server/                 # Main API + auth.js (Better Auth)
 grader/                 # Grading worker
 database-migrations/    # Flyway SQL (includes V3 Better Auth schema)
 redis/                  # Redis configuration
-compose.yaml            # Services and Traefik labels
-project.env             # DB, PG*, and Better Auth env vars
+compose.yaml            # Services, Traefik, LGTM, bind mounts
+project.env             # DB, PG*, Better Auth, OpenTelemetry (Deno)
+postgres-data/          # Host bind mount for PostgreSQL (gitignored)
+lgtm-data/              # Host bind mount for LGTM /data (gitignored)
 pack-submission.ps1     # Optional Windows helper to zip for coursework (see below)
 ```
 

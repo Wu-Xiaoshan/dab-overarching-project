@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     env_file:
       - project.env
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U username -d database"]
       interval: 5s
@@ -30,17 +32,31 @@ services:
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
     command: redis-server /usr/local/etc/redis/redis.conf
 
+  lgtm:
+    image: grafana/otel-lgtm:0.8.6
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "4318:4318"
+    volumes:
+      - ./lgtm-data:/data
+
   traefik:
     image: traefik:v3.3
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:8000"
+      - "--metrics.otlp=true"
+      - "--metrics.otlp.http.endpoint=http://lgtm:4318/v1/metrics"
     ports:
       - "8080:8080"
       - "8000:8000"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    depends_on:
+      lgtm:
+        condition: service_started
 
   server:
     build: ./server
@@ -51,6 +67,8 @@ services:
       flyway:
         condition: service_completed_successfully
       redis:
+        condition: service_started
+      lgtm:
         condition: service_started
     env_file:
       - project.env

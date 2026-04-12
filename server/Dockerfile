@@ -1,5 +1,13 @@
-FROM denoland/deno:alpine-2.0.2
+FROM denoland/deno:alpine-2.2.3
+
 WORKDIR /app
+
+COPY deno.json .
+
+RUN DENO_FUTURE=1 deno install
+
 COPY . .
-RUN deno cache app-run.js
-CMD ["run", "--allow-net", "--allow-env", "--watch", "app-run.js"]
+
+RUN deno cache --unstable-otel app-run.js
+
+CMD [ "run", "--allow-env", "--allow-net", "--allow-read", "--unstable-otel", "--watch", "app-run.js" ]

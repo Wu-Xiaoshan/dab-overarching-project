@@ -39,6 +39,11 @@ const requireSession = async (c, next) => {
 
 app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
 
+app.get("/api/lgtm-test", (c) => {
+  console.log("Hello log collection :)");
+  return c.json({ message: "Hello, world!" });
+});
+
 app.get("/api/languages", async (c) => {
   if (cache.has("languages")) {
     return c.json(cache.get("languages"));

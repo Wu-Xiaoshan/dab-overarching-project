@@ -1,3 +1,5 @@
 .tools/
 client/node_modules/
 *.zip
+postgres-data/
+lgtm-data/
