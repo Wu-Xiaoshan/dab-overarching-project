@@ -56,43 +56,6 @@ Flyway runs migrations on startup. Default credentials and auth secrets live in 
 
 Environment variables for auth (see `project.env`): `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, plus `PGHOST` / `PGUSER` / `PGPASSWORD` / `PGDATABASE` / `PGPORT` for Postgres (used by Better Auth’s dialect and the app).
 
-### Submissions and user ownership (step 11)
-
-- Migration **`database-migrations/V4__user_exercise_submissions.sql`** clears existing rows in **`exercise_submissions`** (so a **`NOT NULL`** `user_id` can be added), then runs:
-  `ALTER TABLE exercise_submissions ADD COLUMN user_id VARCHAR(255) NOT NULL REFERENCES app_user(id);`
-- **`POST /api/exercises/:id/submissions`** stores the **current session user’s id** in `user_id` (`requireSession` sets `userId` from Better Auth’s `session.user.id`).
-- **`GET /api/submissions/:id/status`**: still **401** without a session; with a session, returns **404** if the submission is missing or **`user_id` does not match** the logged-in user; otherwise returns status JSON as before.
-
-#### Step 11 assignment zip (server folder only)
-
-Some hand-ins want a zip of **only** the contents of **`server/`**, with **`app.js` at the root** of the archive (no `server/` prefix). From the repo root:
-
-```powershell
-Push-Location server
-Compress-Archive -Path * -DestinationPath ..\dab-step11-server.zip -Force
-Pop-Location
-```
-
-### Exercises, solutions, and grading (step 12)
-
-- **`V5__exercise_solutions.sql`** adds non-null **`solution_code`** on **`exercises`** (existing rows backfilled with `''` first).
-- **`V6__sql_exercises.sql`** inserts the **SQL** language and three sample SQL exercises with reference solutions.
-- **`grader/grader-utils.js`** exports **`levenshteinDistance(a, b)`** (classic edit distance).
-- **`grader/app.js`** keeps the same queue loop: set **`processing`** → sleep **1–3 s** (random) → load **`source_code`** and **`solution_code`** via join →  
-  **`grade = ceil(100 * (1 - distance / max(len(submission), len(solution))))`** (if both lengths are 0, grade **100**) → set **`graded`** with that grade → next job or **250 ms** wait when the queue is empty.
-
-The public API still returns only **`id`**, **`title`**, and **`description`** for exercises (not **`solution_code`**).
-
-#### Step 12 assignment zip (grader folder only)
-
-Hand-in zip of **only** the contents of **`grader/`**, with **`app.js` at the archive root**:
-
-```powershell
-Push-Location grader
-Compress-Archive -Path * -DestinationPath ..\dab-step12-grader.zip -Force
-Pop-Location
-```
-
 ### Client auth (UI)
 
 - **`client/src/utils/auth.js`** — `createAuthClient()` from Better Auth (Svelte integration).
@@ -101,12 +64,6 @@ Pop-Location
 - **`client/src/pages/auth/register.astro`** and **`login.astro`** — auth pages.
 
 Every Astro page includes **`AuthBar`** (`client:visible`): authenticated users see their **email** in a paragraph; guests see **Login** and **Register** links. On **`/exercises/:id`**, the exercise title and description still load for everyone; the **editor, submit, and grading UI** appear only when logged in. Otherwise the page shows: **`Login or register to complete exercises.`**
-
-### Live correctness estimate (step 14)
-
-On the exercise editor (**`ExerciseEditor.svelte`**), each **`textarea`** input resets a **500 ms** debounce timer. The timer runs **only after the user types** (no request before the first `input` event). When the user **stops typing for more than 500 ms**, the client **`POST`**s to **`/inference-api/predict`** with `{ "exercise": <id>, "code": <textarea text> }`. A successful response updates a paragraph:
-
-**`Correctness estimate: <n>%`** where **`<n>`** is **`Math.round(prediction)`** on the numeric **`prediction`** field. Train a model first (e.g. **`POST /inference-api/train`**) or predictions may return **503** and the UI will not update the estimate.
 
 ### Observability (LGTM) and bind mounts
 
@@ -122,15 +79,8 @@ On the exercise editor (**`ExerciseEditor.svelte`**), each **`textarea`** input 
 
 Host directories **`postgres-data/`** and **`lgtm-data/`** are listed in **`.gitignore`** (local data only).
 
-#### Step 10 assignment zip (compose + env only)
 
-Some course hand-ins ask for a zip that contains **only** `compose.yaml` and `project.env` at the **root** of the archive (no folders). From the project root:
-
-```powershell
-Compress-Archive -Path compose.yaml, project.env -DestinationPath dab-step10-compose-env.zip -Force
-```
-
-### Inference API (step 13)
+### Inference API
 
 Python service in **`inference-api/`** (FastAPI app instance is named **`server`**, run with **`uvicorn app:server`** so it is **`app.server`** in Uvicorn terms).
 
