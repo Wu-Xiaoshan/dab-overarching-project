@@ -104,25 +104,6 @@ curl -s -X POST http://localhost:8000/inference-api/predict \
   -d '{"exercise":1,"code":"SELECT 1"}'
 ```
 
-#### Step 13 assignment zip (inference-api only)
-
-Zip **only** **`app.py`**, **`requirements.txt`**, and **`Dockerfile`** (flat root, no `inference-api/` folder, no model files):
-
-```powershell
-Set-Location inference-api
-Compress-Archive -LiteralPath app.py, requirements.txt, Dockerfile `
-  -DestinationPath ..\dab-step13-inference-api.zip -Force
-Set-Location ..
-```
-
-### Enable grading
-
-The grader does not process the queue until consumption is enabled:
-
-```bash
-curl -X POST http://localhost:8000/grader-api/consume/enable
-```
-
 ## Layout
 
 ```
