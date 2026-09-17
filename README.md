@@ -1,6 +1,6 @@
 # DAB Overarching Project
 
-Course full-stack project: programming exercises, submissions, and asynchronous grading. The **Traefik** load balancer is the single entry point; the **server** exposes the REST API; the **grader** scores submissions; an optional **inference-api** (FastAPI + scikit-learn) exposes ML **train** / **predict** routes under **`/inference-api`**.
+Course full-stack project. The **Traefik** load balancer is the single entry point; the **server** exposes the REST API; the **grader** scores submissions; an optional **inference-api** (FastAPI + scikit-learn) exposes ML **train** / **predict** routes under **`/inference-api`**.
 
 ## Stack
 
