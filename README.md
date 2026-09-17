@@ -141,17 +141,6 @@ postgres-data/          # Host bind mount for PostgreSQL (gitignored)
 lgtm-data/              # Host bind mount for LGTM /data (gitignored)
 pack-submission.ps1     # Optional Windows helper to zip for coursework (see below)
 ```
-
-## About `pack-submission.ps1`
-
-Optional **PowerShell** helper for packaging coursework submissions:
-
-- Removes `client/node_modules` if present
-- Builds a zip whose **root** contains `compose.yaml`, `project.env`, and the `client`, `database-migrations`, `grader`, `inference-api`, `redis`, and `server` folders (no extra parent directory; `inference-api` keeps `docker compose` consistent with `compose.yaml`)
-- Verifies `server/app.js` exists at the archive root to avoid “module not found” on the autograder
-
-You do **not** need this script to run the stack; it is only convenient when the course asks for a zip upload.
-
 ## License
 
 For educational use unless stated otherwise.
